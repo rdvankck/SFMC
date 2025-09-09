@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Email Validation for SFMC CloudPages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        input[type="email"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="email"]:focus {
+            outline: none;
+            border-color: #007749;
+        }
+        
+        input[type="email"].error {
+            border-color: #dc3545 !important;
+        }
+        
+        input[type="email"].valid {
+            border-color: #28a745 !important;
+        }
+        
+        /* Modern loading dots for email check */
+        .email-checking {
+            display: none;
+            margin-left: 15px;
+            align-items: center;
+        }
+        
+        .email-checking.show {
+            display: inline-flex;
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            background-color: #007749;
+            border-radius: 50%;
+            animation: pulse-dot 1.4s ease-in-out infinite both;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0; }
+        
+        @keyframes pulse-dot {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+            padding: 8px 12px;
+            background-color: rgba(220, 53, 69, 0.1);
+            border-radius: 4px;
+            border-left: 3px solid #dc3545;
+        }
+        
+        .success-message {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+            padding: 8px 12px;
+            background-color: rgba(40, 167, 69, 0.1);
+            border-radius: 4px;
+            border-left: 3px solid #28a745;
+        }
+        
+        .submit-btn {
+            background-color: #007749;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            background-color: #005a37;
+        }
+        
+        .submit-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .demo-info {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .demo-info h3 {
+            margin-top: 0;
+            color: #1976D2;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>🚀 Real-time Email Validation</h1>
+        
+        <div class="demo-info">
+            <h3>📋 Setup Instructions:</h3>
+            <p><strong>1.</strong> Create a CloudPage with ID <code>4578</code> for email checking</p>
+            <p><strong>2.</strong> Add this AMPScript to your email check CloudPage:</p>
+            <code>
+                %%[<br>
+                SET @checkEmail = RequestParameter("checkEmail")<br>
+                SET @response = "NOT_FOUND"<br><br>
+                
+                IF NOT EMPTY(@checkEmail) THEN<br>
+                &nbsp;&nbsp;SET @checkEmail = TRIM(@checkEmail)<br>
+                &nbsp;&nbsp;SET @rows = LookupRows("YOUR_DATA_EXTENSION","EmailAddress",@checkEmail)<br>
+                &nbsp;&nbsp;SET @rowCount = RowCount(@rows)<br><br>
+                
+                &nbsp;&nbsp;IF @rowCount > 0 THEN<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;SET @response = "EXISTS"<br>
+                &nbsp;&nbsp;ENDIF<br>
+                ENDIF<br>
+                ]%%<br>
+                %%=v(@response)=%%
+            </code>
+            <p><strong>3.</strong> Replace <code>YOUR_DATA_EXTENSION</code> with your actual Data Extension name</p>
+            <p><strong>4.</strong> Update CloudPage URL in JavaScript below</p>
+        </div>
+        
+        <form id="demo-form">
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <div class="input-container">
+                    <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                    <div class="email-checking" id="email-spinner">
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="error-message" id="email-error">This field is required</div>
+                <div class="error-message" id="email-exists-error">
+                    This email address is already registered. Please use a different email.
+                </div>
+                <div class="success-message" id="email-success">
+                    ✅ Email is available!
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submit-btn">Submit Form</button>
+        </form>
+    </div>
+
+    <script>
+        // Email validation variables
+        let emailCheckTimeout;
+        let isEmailValid = true;
+        let emailCache = {}; // Cache for performance
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const emailField = document.getElementById('email');
+            const emailSpinner = document.getElementById('email-spinner');
+            const emailError = document.getElementById('email-error');
+            const emailExistsError = document.getElementById('email-exists-error');
+            const emailSuccess = document.getElementById('email-success');
+            const submitBtn = document.getElementById('submit-btn');
+            const demoForm = document.getElementById('demo-form');
+
+            // Real-time email check function
+            function checkEmailExists() {
+                const email = emailField.value.trim();
+
+                // Clear previous timeout
+                clearTimeout(emailCheckTimeout);
+
+                // Hide all messages
+                emailError.style.display = 'none';
+                emailExistsError.style.display = 'none';
+                emailSuccess.style.display = 'none';
+                emailField.classList.remove('error', 'valid');
+
+                // Basic email validation first
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!email || !emailRegex.test(email)) {
+                    isEmailValid = true; // Don't block for format issues
+                    return;
+                }
+
+                // Show spinner
+                emailSpinner.classList.add('show');
+
+                // Check cache first
+                if (emailCache[email]) {
+                    console.log('Using cached result for:', email);
+                    emailSpinner.classList.remove('show');
+                    
+                    if (emailCache[email] === 'EXISTS') {
+                        emailField.classList.add('error');
+                        emailExistsError.style.display = 'block';
+                        isEmailValid = false;
+                    } else {
+                        emailField.classList.add('valid');
+                        emailSuccess.style.display = 'block';
+                        isEmailValid = true;
+                    }
+                    return;
+                }
+
+                // Debounce the API call (100ms for super responsive UX)
+                emailCheckTimeout = setTimeout(function() {
+                    // IMPORTANT: Replace with your CloudPage URL
+                    // Example: '%%=CloudPagesURL(4873)=%%' for SFMC
+                    // For demo, using a mock endpoint
+                    const checkURL = 'YOUR_CLOUDPAGE_URL_HERE'; // Replace this!
+                    
+                    // AJAX call to check email
+                    fetch(checkURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'checkEmail=' + encodeURIComponent(email)
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        emailSpinner.classList.remove('show');
+                        console.log('Email check response:', data);
+                        
+                        // Cache the result for future use
+                        emailCache[email] = data.trim();
+                        console.log('Cached result for', email, ':', data.trim());
+                        
+                        // Parse response - direct comparison for faster performance
+                        if (data.trim() === 'EXISTS') {
+                            // Email exists in database
+                            emailField.classList.add('error');
+                            emailExistsError.style.display = 'block';
+                            isEmailValid = false;
+                            console.log('Email exists - blocking form');
+                        } else {
+                            // Email is available
+                            emailField.classList.add('valid');
+                            emailSuccess.style.display = 'block';
+                            isEmailValid = true;
+                            console.log('Email available - allowing form');
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Email check error:', error);
+                        emailSpinner.classList.remove('show');
+                        isEmailValid = true; // Don't block on API errors
+                        // Reset email field border on error
+                        emailField.classList.remove('error', 'valid');
+                        // Show a demo message for GitHub demo
+                        if (checkURL === 'YOUR_CLOUDPAGE_URL_HERE') {
+                            // Demo mode - simulate response
+                            simulateEmailCheck(email);
+                        }
+                    });
+                }, 100); // 100ms delay for super responsive UX
+            }
+
+            // Demo simulation function (remove in production)
+            function simulateEmailCheck(email) {
+                emailSpinner.classList.remove('show');
+                
+                // Simulate some emails as existing for demo
+                const existingEmails = ['test@example.com', 'demo@test.com', 'admin@site.com'];
+                
+                if (existingEmails.includes(email.toLowerCase())) {
+                    emailField.classList.add('error');
+                    emailExistsError.style.display = 'block';
+                    isEmailValid = false;
+                    emailCache[email] = 'EXISTS';
+                } else {
+                    emailField.classList.add('valid');
+                    emailSuccess.style.display = 'block';
+                    isEmailValid = true;
+                    emailCache[email] = 'NOT_FOUND';
+                }
+            }
+
+            // Form submission validation
+            function validateForm(event) {
+                console.log('Form submit - checking email validation status');
+                
+                let hasErrors = false;
+                const email = emailField.value.trim();
+
+                // Reset styles
+                emailField.classList.remove('error');
+                emailError.style.display = 'none';
+                emailExistsError.style.display = 'none';
+
+                // Check if email is empty
+                if (!email) {
+                    emailField.classList.add('error');
+                    emailError.textContent = 'Please enter your email address';
+                    emailError.style.display = 'block';
+                    hasErrors = true;
+                }
+
+                // Check email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (email && !emailRegex.test(email)) {
+                    emailField.classList.add('error');
+                    emailError.textContent = 'Please enter a valid email address';
+                    emailError.style.display = 'block';
+                    hasErrors = true;
+                }
+
+                // Check if email exists (real-time validation result)
+                console.log('Submit validation - isEmailValid:', isEmailValid);
+                if (!isEmailValid) {
+                    console.log('Blocking submit - email exists');
+                    emailField.classList.add('error');
+                    emailExistsError.style.display = 'block';
+                    hasErrors = true;
+                } else {
+                    console.log('Email validation passed');
+                }
+
+                // Prevent form submission if there are errors
+                if (hasErrors) {
+                    event.preventDefault();
+                    return false;
+                }
+
+                // For demo purposes, prevent actual submission
+                event.preventDefault();
+                alert('✅ Form validation passed! Email is valid and available.');
+                return false;
+            }
+
+            // Event listeners
+            emailField.addEventListener('blur', checkEmailExists);
+            emailField.addEventListener('input', function() {
+                // Clear timeout and hide messages when user types
+                clearTimeout(emailCheckTimeout);
+                emailExistsError.style.display = 'none';
+                emailSuccess.style.display = 'none';
+                emailSpinner.classList.remove('show');
+                emailField.classList.remove('error', 'valid');
+            });
+
+            demoForm.addEventListener('submit', validateForm);
+        });
+    </script>
+</body>
+</html>
