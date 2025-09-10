@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Autocomplete Example</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Jameson renk paleti */
+        :root {
+            --jameson-green: #154734;
+            --jameson-light-green: #1a5740;
+            --jameson-gold: #D4AF37;
+            --jameson-cream: #F5F5DC;
+            --jameson-white: #FFFFFF;
+            --jameson-dark: #0F3429;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, var(--jameson-green) 0%, var(--jameson-light-green) 100%);
+            background-attachment: fixed;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: var(--jameson-white);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            color: var(--jameson-green);
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--jameson-green);
+            font-size: 16px;
+        }
+
+        .location-input-field {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .location-input-field:focus {
+            border-color: var(--jameson-green);
+            box-shadow: 0 0 0 3px rgba(21, 71, 52, 0.1);
+            outline: none;
+        }
+
+        /* City Autocomplete Styles */
+        .autocomplete-container {
+            position: relative;
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .add-city-btn {
+            background: var(--jameson-green);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(21, 71, 52, 0.2);
+        }
+
+        .add-city-btn:hover {
+            background: var(--jameson-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(21, 71, 52, 0.3);
+        }
+
+        .add-city-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 70px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: rgba(21, 71, 52, 0.1);
+            color: var(--jameson-green);
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Selected Cities Display */
+        .selected-cities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px solid #f0f0f0;
+            min-height: 60px;
+            align-items: flex-start;
+            margin-right: 88px;
+        }
+
+        .city-block {
+            background: var(--jameson-green);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(21, 71, 52, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .city-block:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(21, 71, 52, 0.3);
+        }
+
+        .city-remove-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 5px;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .city-remove-btn:hover {
+            opacity: 1;
+        }
+
+        .info-box {
+            background: rgba(21, 71, 52, 0.1);
+            border: 1px solid rgba(21, 71, 52, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-title {
+            color: var(--jameson-green);
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .autocomplete-container {
+                flex-direction: column;
+            }
+            
+            .selected-cities {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">City Autocomplete Example</h1>
+        
+        <div class="form-section">
+            <label class="input-label">Cities you'd like to hear about</label>
+            <div class="autocomplete-container">
+                <input 
+                    type="text" 
+                    id="cityInput" 
+                    class="location-input-field" 
+                    placeholder="Max 3 Cities"
+                    autocomplete="off">
+                <button type="button" class="add-city-btn" id="addCityBtn">ADD</button>
+                <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+            </div>
+            <label class="input-label" style="margin-top:8px;">Max 3 Cities</label> 
+            <div class="selected-cities" id="selectedCities">
+                <!-- Selected cities will be displayed here as blocks -->
+            </div>
+        </div>
+
+        <!-- Hidden input for form submission -->
+        <input type="hidden" id="selectedCitiesInput" name="selected_cities" value="">
+
+        <div class="info-box">
+            <div class="info-title">Nasıl Kullanılır:</div>
+            <p>1. Input alanına şehir adını yazmaya başlayın</p>
+            <p>2. Açılan listeden bir şehir seçin ya da ADD butonuna basın</p>
+            <p>3. Maksimum 3 şehir seçebilirsiniz</p>
+            <p>4. Seçilen şehirleri X butonuyla kaldırabilirsiniz</p>
+            <p>5. Seçilen şehirler "selected_cities" hidden input alanında virgülle ayrılmış şekilde saklanır</p>
+        </div>
+
+        <div class="info-box">
+            <div class="info-title">JavaScript Kodu:</div>
+            <div class="code-block">
+// UK Cities Array
+const ukCities = ['Aberdeen', 'Belfast', 'Birmingham', 'Bristol', 'Cardiff', 'Edinburgh', 'Glasgow', 'Leeds', 'Liverpool', 'London', 'Manchester', 'Newcastle', 'Nottingham', 'Sheffield', ...];
+
+// Global variables
+let selectedCities = [];
+const maxCities = 3;
+
+// Setup autocomplete functionality
+function setupAutocomplete() {
+    const cityInput = document.getElementById('cityInput');
+    const dropdown = document.getElementById('autocompleteDropdown');
+    const addBtn = document.getElementById('addCityBtn');
+    
+    // Event listeners...
+}
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-title">HTML Yapısı:</div>
+            <div class="code-block">
+&lt;div class="autocomplete-container"&gt;
+    &lt;input type="text" id="cityInput" class="location-input-field" 
+           placeholder="Max 3 Cities" autocomplete="off"&gt;
+    &lt;button type="button" class="add-city-btn" id="addCityBtn"&gt;ADD&lt;/button&gt;
+    &lt;div class="autocomplete-dropdown" id="autocompleteDropdown"&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="selected-cities" id="selectedCities"&gt;&lt;/div&gt;
+&lt;input type="hidden" id="selectedCitiesInput" name="selected_cities"&gt;
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // UK Cities for autocomplete (aynı liste form3football.html'den alındı)
+        const ukCities = [
+            'Aberdeen', 'Armagh', 'Bangor (Wales)', 'Bangor (Northern Ireland)', 'Bath', 'Belfast', 'Birmingham', 'Bradford',
+            'Brighton and Hove', 'Bristol', 'Cambridge', 'Canterbury', 'Cardiff', 'Carlisle',
+            'Chelmsford', 'Chester', 'Chichester', 'Colchester', 'Coventry', 'Derby', 'Derry', 'Doncaster',
+            'Dundee', 'Dunfermline', 'Durham', 'Edinburgh', 'Ely', 'Exeter',
+            'Glasgow', 'Gloucester', 'Hereford', 'Inverness', 'Kingston upon Hull', 'Lancaster',
+            'Leeds', 'Leicester', 'Lichfield', 'Lincoln', 'Liverpool', 'London', 'Londonderry',
+            'Luton', 'Manchester', 'Newcastle upon Tyne', 'Newport', 'Norwich', 'Nottingham',
+            'Oxford', 'Perth', 'Peterborough', 'Plymouth', 'Portsmouth', 'Preston', 'Ripon',
+            'Salford', 'Salisbury', 'Sheffield', 'Southampton', 'St Albans', 'Stirling',
+            'Stoke-on-Trent', 'Sunderland', 'Swansea', 'Truro', 'Wakefield', 'Wells',
+            'Westminster', 'Winchester', 'Wolverhampton', 'Worcester', 'York'
+        ];
+
+        // Global variables
+        let selectedCities = [];
+        const maxCities = 3;
+
+        // City selection functionality (form3football.html'den alınan fonksiyonlar)
+        function setupAutocomplete() {
+            const cityInput = document.getElementById('cityInput');
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const addBtn = document.getElementById('addCityBtn');
+            
+            // Show dropdown when typing (minimum 1 character)
+            cityInput.addEventListener('input', function() {
+                const value = this.value.toLowerCase().trim();
+                dropdown.innerHTML = '';
+                
+                if (value.length >= 1) {
+                    // Filter cities that START with the typed letters
+                    const matches = ukCities.filter(city => 
+                        city.toLowerCase().startsWith(value) && 
+                        !selectedCities.includes(city)
+                    ).slice(0, 8);
+                    
+                    if (matches.length > 0) {
+                        matches.forEach(city => {
+                            const item = document.createElement('div');
+                            item.className = 'autocomplete-item';
+                            item.textContent = city;
+                            item.onclick = () => selectCityFromDropdown(city);
+                            dropdown.appendChild(item);
+                        });
+                        dropdown.style.display = 'block';
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                } else {
+                    dropdown.style.display = 'none';
+                }
+                
+                updateAddButtonState();
+            });
+            
+            // ADD button functionality
+            addBtn.addEventListener('click', function() {
+                const value = cityInput.value.trim();
+                if (value && selectedCities.length < maxCities) {
+                    // Check if it's a valid UK city that starts with input
+                    const matchingCity = ukCities.find(city => 
+                        city.toLowerCase().startsWith(value.toLowerCase()) &&
+                        !selectedCities.includes(city)
+                    );
+                    
+                    if (matchingCity) {
+                        addCity(matchingCity);
+                    }
+                }
+            });
+            
+            // Enter key to add city
+            cityInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addBtn.click();
+                }
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.autocomplete-container')) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+
+        function selectCityFromDropdown(city) {
+            const cityInput = document.getElementById('cityInput');
+            cityInput.value = city;
+            document.getElementById('autocompleteDropdown').style.display = 'none';
+            updateAddButtonState();
+        }
+
+        function updateAddButtonState() {
+            const cityInput = document.getElementById('cityInput');
+            const addBtn = document.getElementById('addCityBtn');
+            const value = cityInput.value.trim();
+            
+            const canAdd = value.length >= 1 && 
+                          selectedCities.length < maxCities && 
+                          ukCities.some(city => 
+                              city.toLowerCase().startsWith(value.toLowerCase()) &&
+                              !selectedCities.includes(city)
+                          );
+            
+            addBtn.disabled = !canAdd;
+        }
+
+        function addCity(city) {
+            if (selectedCities.length >= maxCities || selectedCities.includes(city)) {
+                return;
+            }
+            
+            selectedCities.push(city);
+            updateSelectedCitiesDisplay();
+            updateSelectedCitiesInput();
+            
+            // Clear input
+            const cityInput = document.getElementById('cityInput');
+            cityInput.value = '';
+            document.getElementById('autocompleteDropdown').style.display = 'none';
+            updateAddButtonState();
+        }
+
+        function removeCity(city) {
+            const index = selectedCities.indexOf(city);
+            if (index > -1) {
+                selectedCities.splice(index, 1);
+                updateSelectedCitiesDisplay();
+                updateSelectedCitiesInput();
+                updateAddButtonState();
+            }
+        }
+
+        function updateSelectedCitiesDisplay() {
+            const container = document.getElementById('selectedCities');
+            container.innerHTML = '';
+            
+            selectedCities.forEach(city => {
+                const cityBlock = document.createElement('div');
+                cityBlock.className = 'city-block';
+                cityBlock.innerHTML = `
+                    <span>${city}</span>
+                    <button type="button" class="city-remove-btn" onclick="removeCity('${city}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(cityBlock);
+            });
+        }
+
+        function updateSelectedCitiesInput() {
+            document.getElementById('selectedCitiesInput').value = selectedCities.join(',');
+        }
+
+        // Initialize the autocomplete functionality when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setupAutocomplete();
+            updateAddButtonState();
+        });
+    </script>
+</body>
+</html>
